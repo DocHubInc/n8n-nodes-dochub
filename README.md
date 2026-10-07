@@ -1,17 +1,69 @@
 # n8n-nodes-dochub
 
+Use [DocHub](https://dochub.com) in [n8n](https://n8n.io/). **DocHub Trigger** starts a workflow when a DocHub event happens. **DocHub** downloads that document as a PDF.
+
+## Install on n8n Cloud
+
+A workspace owner or admin installs the package once. Every member of that workspace can then use the nodes.
+
+1. Open the canvas and the nodes panel.
+2. Search for **DocHub**.
+3. Under **More from the community**, open **DocHub Trigger** or **DocHub**.
+4. Select **Install**.
+
+On n8n Cloud, the owner can show or hide verified community nodes in the Cloud Admin Panel.
+
+## Credentials
+
+In DocHub, create an API key and add it in n8n as the **DocHub API** credential. Choose **Test** to confirm it. n8n sends the key as `X-API-Token`.
+
+The key needs:
+
+- webhook create, read, delete, and secret rotation, or the `all` permission, plus admin access on the account
+- permission to download the document PDF
+
+Creating webhooks requires a paid DocHub plan.
+
+## Start a workflow from DocHub
+
+1. Add **DocHub Trigger**.
+2. Select the events that should start the workflow. The node can subscribe to `document.created`, `document.shared`, `document.status_changed`, `sign_request.created`, `sign_request.voided`, `signer.finalized`, and `signer.rejected`.
+3. Turn the workflow **Active**.
+
+n8n creates the webhook in DocHub for the selected events and removes it when the workflow is turned off. Each delivery is checked with the DocHub signature before the workflow starts.
+
+`webhook.ping` is DocHub's connectivity test. The trigger answers it and does not start a workflow.
+
+## Download the PDF
+
+Add **DocHub** after the trigger. Set the operation to **Download** and **Document ID** to:
+
+```text
+{{ $json.data.document.id }}
+```
+
+**File Name** is optional. Leave it empty to use the name DocHub sends, or set an expression such as `{{ $json.data.document.title }}`. The PDF is the binary item `data`.
+
+## Resources
+
+- [DocHub webhooks](https://dev.dochub.com/docs/webhooks)
+- [DocHub events](https://dev.dochub.com/docs/webhooks/events)
+- [DocHub API key authentication](https://dev.dochub.com/docs/authentication/api-key)
+
+## Developers
+
 n8n community nodes for [DocHub](https://dochub.com). A trigger starts a workflow when DocHub sends a webhook, and a second node downloads the document PDF with an API key.
 
 [n8n](https://n8n.io/) is a workflow automation platform.
 
-## Nodes
+### Nodes
 
 - **DocHub Trigger** subscribes to every DocHub webhook event: `document.created`, `document.shared`, `document.status_changed`, `sign_request.created`, `sign_request.voided`, `signer.finalized`, and `signer.rejected`. Activating the workflow creates the webhook in DocHub. Turning it off deletes that webhook. Each delivery is checked with the DocHub HMAC signature before the workflow starts.
 - **DocHub** downloads the compiled PDF for a document id. After the trigger, that id is usually `{{ $json.data.document.id }}`.
 
 `webhook.ping` is answered with HTTP 200 and does not start a workflow. It is DocHub's connectivity test, not a business event.
 
-## Credentials
+### Credentials
 
 Create an API key in DocHub and store it in the **DocHub API** credential. Requests send it as `X-API-Token`.
 
@@ -22,7 +74,7 @@ The key needs:
 
 DocHub only allows webhook creation on paid plans.
 
-## Test locally
+### Test locally
 
 This package runs in a local n8n before it is published. It does not appear in the node search on app.n8n.cloud until n8n verifies it.
 
@@ -52,14 +104,14 @@ N8N_RESTRICT_FILE_ACCESS_TO="$HOME/.n8n-files;$(pwd)" WEBHOOK_URL="$WEBHOOK_URL"
 After the editor opens at <http://localhost:5678>:
 
 1. Create a **DocHub API** credential with an API key from the DocHub account that will emit the events, and confirm it with **Test**.
-2. Add **DocHub Trigger** and leave the events you want selected. Turn the workflow **Active**. n8n creates the webhook in DocHub for the printed `WEBHOOK_URL`. Turning the workflow off deletes that webhook. `webhook.ping` returns HTTP 200 and does not start a run.
+2. Add **DocHub Trigger** and leave the events you want selected. Turn the workflow **Active**. n8n registers the webhook in DocHub for the printed `WEBHOOK_URL`. Turning the workflow off deletes that webhook. `webhook.ping` returns HTTP 200 and does not start a run.
 3. Add **DocHub**, operation **Download**. Set **Document ID** to `{{ $json.data.document.id }}`. **File Name** is optional. Leave it empty to use the name DocHub sends, or set it to an expression such as `{{ $json.data.document.title }}`.
 
 The workflow keeps listening only while ngrok, `npm run dev`, and the Active toggle all stay on. After you restart ngrok, run the `WEBHOOK_URL=...` command again, then turn the workflow off and back on so DocHub stores the new address.
 
 The signing secret is stored in the workflow's static data when DocHub creates the webhook. It is not part of the credential. Importing the workflow on another n8n instance requires activating it again so a new webhook is created.
 
-## Resources
+### Resources
 
 - [DocHub webhooks](https://dev.dochub.com/docs/webhooks)
 - [DocHub events](https://dev.dochub.com/docs/webhooks/events)
