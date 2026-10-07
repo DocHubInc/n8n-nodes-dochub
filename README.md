@@ -15,7 +15,7 @@ On n8n Cloud, the owner can show or hide verified community nodes in the Cloud A
 
 ## Credentials
 
-In DocHub, create an API key and add it in n8n as the **DocHub API** credential. Choose **Test** to confirm it. n8n sends the key as `X-API-Token`.
+In DocHub, [create an API key](https://dev.dochub.com/settings/api-keys) and add it in n8n as the **DocHub API** credential. Choose **Test** to confirm it. n8n sends the key as `X-API-Token`.
 
 The key needs:
 
@@ -65,7 +65,7 @@ n8n community nodes for [DocHub](https://dochub.com). A trigger starts a workflo
 
 ### Credentials
 
-Create an API key in DocHub and store it in the **DocHub API** credential. Requests send it as `X-API-Token`.
+[Create an API key](https://dev.dochub.com/settings/api-keys) in DocHub and store it in the **DocHub API** credential. Requests send it as `X-API-Token`.
 
 The key needs:
 
