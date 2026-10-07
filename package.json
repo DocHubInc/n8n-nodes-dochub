@@ -1,6 +1,6 @@
 {
     "name": "n8n-nodes-dochub",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "n8n community nodes for DocHub webhooks and document download",
     "license": "MIT",
     "homepage": "https://dev.dochub.com",
@@ -18,17 +18,17 @@
         "type": "git",
         "url": "git+https://github.com/DocHubInc/n8n-nodes-dochub.git"
     },
-   "scripts": {
-		"build": "n8n-node build",
-		"build:watch": "tsc --watch",
-		"dev": "n8n-node dev",
-		"dev:ngrok": "bash scripts/dev-with-ngrok.sh",
-		"lint": "n8n-node lint",
-		"lint:fix": "n8n-node lint --fix",
-		"test": "node --experimental-strip-types --test test/**/*.test.mjs",
-		"release": "n8n-node release",
-		"prepublishOnly": "n8n-node prerelease"
-	},
+    "scripts": {
+        "build": "n8n-node build",
+        "build:watch": "tsc --watch",
+        "dev": "n8n-node dev",
+        "dev:ngrok": "bash scripts/dev-with-ngrok.sh",
+        "lint": "n8n-node lint",
+        "lint:fix": "n8n-node lint --fix",
+        "test": "node --experimental-strip-types --test test/**/*.test.mjs",
+        "release": "n8n-node release",
+        "prepublishOnly": "n8n-node prerelease"
+    },
     "files": [
         "dist"
     ],
