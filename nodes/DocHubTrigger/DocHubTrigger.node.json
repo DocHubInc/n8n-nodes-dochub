@@ -1,0 +1,18 @@
+{
+	"node": "n8n-nodes-dochub.docHubTrigger",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Productivity"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://dev.dochub.com/docs/authentication/api-key"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://dev.dochub.com/docs/webhooks/events"
+			}
+		]
+	}
+}
