@@ -1,6 +1,6 @@
 {
     "name": "n8n-nodes-dochub",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": "n8n community nodes for DocHub webhooks and document download",
     "license": "MIT",
     "homepage": "https://dev.dochub.com",
