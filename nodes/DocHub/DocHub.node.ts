@@ -84,6 +84,21 @@ export class DocHub implements INodeType {
 					},
 				},
 			},
+			{
+				displayName: 'File Name',
+				name: 'fileName',
+				type: 'string',
+				default: '',
+				placeholder: 'Signed Contract.pdf',
+				description:
+					'Name for the downloaded PDF. Leave empty to use the name DocHub sends, or the document ID when DocHub does not send one.',
+				displayOptions: {
+					show: {
+						resource: ['document'],
+						operation: ['download'],
+					},
+				},
+			},
 		],
 	};
 
@@ -106,7 +121,12 @@ export class DocHub implements INodeType {
 					),
 				);
 				const downloaded = await downloadPdf.call(this, metadata.url);
-				const fileName = safePdfFileName(downloaded.contentDisposition, documentId);
+				const preferredName = this.getNodeParameter('fileName', itemIndex, '') as string;
+				const fileName = safePdfFileName(
+					downloaded.contentDisposition,
+					documentId,
+					preferredName,
+				);
 				const binary = await this.helpers.prepareBinaryData(
 					downloaded.buffer,
 					fileName,

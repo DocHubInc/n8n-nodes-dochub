@@ -197,8 +197,15 @@ export function parsePdfUrl(payload: unknown): { url: string; expiresIn?: number
 	return { url, expiresIn };
 }
 
-export function safePdfFileName(header: unknown, documentId: string): string {
+export function safePdfFileName(
+	header: unknown,
+	documentId: string,
+	preferredName?: string,
+): string {
 	const fallback = `${sanitizeFileStem(documentId) || 'document'}.pdf`;
+	const preferred = preferredName?.trim();
+	if (preferred) return toPdfFileName(preferred, fallback);
+
 	const raw = singleHeader(header);
 	if (!raw) return fallback;
 
@@ -210,8 +217,12 @@ export function safePdfFileName(header: unknown, documentId: string): string {
 		: (quoted?.[1] ?? plain?.[1])?.trim();
 	if (!candidate) return fallback;
 
-	const base = candidate.split(/[/\\]/).pop()?.trim();
-	const cleaned = sanitizeFileStem(base ?? '');
+	return toPdfFileName(candidate, fallback);
+}
+
+function toPdfFileName(candidate: string, fallback: string): string {
+	const base = candidate.split(/[/\\]/).pop()?.trim() ?? '';
+	const cleaned = sanitizeFileStem(base);
 	if (!cleaned) return fallback;
 	return cleaned.toLowerCase().endsWith('.pdf') ? cleaned : `${cleaned}.pdf`;
 }
@@ -259,7 +270,7 @@ function readStringArray(value: unknown): string[] | undefined {
 
 function sanitizeFileStem(value: string): string {
 	return value
-		.replace(/[^A-Za-z0-9._ ()-]+/g, '_')
+		.replace(/[^\p{L}\p{N}\p{M}._ ()-]+/gu, '_')
 		.replace(/^\.+/g, '')
 		.slice(0, 180);
 }

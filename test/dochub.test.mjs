@@ -162,5 +162,16 @@ describe('document download helpers', () => {
 			safePdfFileName('attachment; filename="../secret.txt"', 'doc_123'),
 			'secret.txt.pdf',
 		);
+		assert.equal(
+			safePdfFileName('attachment; filename="From DocHub.pdf"', 'doc_123', 'Quarterly Report'),
+			'Quarterly Report.pdf',
+		);
+		assert.equal(
+			safePdfFileName(undefined, 'doc_123', '  ../nested/My File.pdf  '),
+			'My File.pdf',
+		);
+		assert.equal(safePdfFileName(undefined, 'doc_123', '   '), 'doc_123.pdf');
+		assert.equal(safePdfFileName(undefined, 'doc_123', 'персонаж.pdf'), 'персонаж.pdf');
+		assert.equal(safePdfFileName(undefined, 'doc_123', 'персонаж'), 'персонаж.pdf');
 	});
 });
