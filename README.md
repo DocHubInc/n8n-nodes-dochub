@@ -19,7 +19,7 @@ In DocHub, create an API key and add it in n8n as the **DocHub API** credential.
 
 The key needs:
 
-- webhook create, read, delete, and secret rotation, or the `all` permission, plus admin access on the account
+- webhook create, read, delete, and secret rotation, or the `all` permission
 - permission to download the document PDF
 
 Creating webhooks requires a paid DocHub plan.
@@ -69,7 +69,7 @@ Create an API key in DocHub and store it in the **DocHub API** credential. Reque
 
 The key needs:
 
-- webhook create, read, delete, and secret rotation, or the `all` permission, plus admin access on the account
+- webhook create, read, delete, and secret rotation, or the `all` permission
 - permission to download the document PDF
 
 DocHub only allows webhook creation on paid plans.

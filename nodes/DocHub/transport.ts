@@ -74,7 +74,7 @@ export function rethrowDocHubError(node: INode, error: unknown, itemIndex?: numb
 	if (statusCode === 403) {
 		throw new NodeOperationError(
 			node,
-			'DocHub rejected the API key. Grant it the permission for this operation, or the all permission. Webhook setup also needs admin access on the account.',
+			'DocHub rejected the API key. Grant it the permission for this operation, or the all permission.',
 			{ itemIndex },
 		);
 	}
