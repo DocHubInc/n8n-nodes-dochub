@@ -16,7 +16,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/kislak/n8n-nodes-dochub.git"
+        "url": "git+https://github.com/DocHubInc/n8n-nodes-dochub.git"
     },
    "scripts": {
 		"build": "n8n-node build",
