@@ -1,6 +1,10 @@
 # n8n-nodes-dochub
 
-Use [DocHub](https://dochub.com) in [n8n](https://n8n.io/). **DocHub Trigger** starts a workflow when a DocHub event happens. **DocHub** downloads a document as a PDF and sends sign requests from templates.
+Use [DocHub](https://dochub.com) in [n8n](https://n8n.io/):
+
+- **DocHub Trigger** starts a workflow when a DocHub event happens.
+- **Download** a document as a PDF.
+- **Send a sign request** from a template.
 
 ## Install on n8n Cloud
 
