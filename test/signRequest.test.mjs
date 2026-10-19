@@ -7,6 +7,7 @@ import {
 	createdRoleId,
 	fieldAssignments,
 	fieldOptions,
+	matchRoleName,
 	parseDocumentId,
 	readSigners,
 	roleIdsByName,
@@ -110,6 +111,10 @@ describe('assertValidSigners', () => {
 			() => assertValidSigners([signer('Client'), signer('Client')]),
 			/more than one signer/,
 		);
+		assert.throws(
+			() => assertValidSigners([signer('Client'), signer('client')]),
+			/more than one signer/,
+		);
 	});
 
 	it('allows All Fields on one signer only', () => {
@@ -123,6 +128,12 @@ describe('assertValidSigners', () => {
 describe('roles', () => {
 	it('maps role names to IDs', () => {
 		assert.deepEqual(roleIdsByName(roles), roleIds);
+	});
+
+	it('matches a role name without regard to case', () => {
+		assert.equal(matchRoleName(roleIds, 'client'), 'Client');
+		assert.equal(matchRoleName(roleIds, 'Client'), 'Client');
+		assert.equal(matchRoleName(roleIds, 'Witness'), undefined);
 	});
 
 	it('reads the created role from flat and wrapped responses', () => {

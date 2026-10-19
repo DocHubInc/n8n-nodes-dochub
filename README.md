@@ -59,7 +59,7 @@ Add **DocHub**, set the resource to **Sign Request** and the operation to **Send
 
 Fields and new roles are saved on the template itself, so later sends reuse them. Every signer needs at least one field.
 
-DocHub sends a copy of the template. The output is the new sign request, including `documentUrl`. Every run sends a new copy and new emails.
+DocHub sends a copy of the template. The output is the new sign request. `documentId` and `document.fullUrl` refer to that copy, not the template. Every run sends a new copy and new emails.
 
 ## Resources
 

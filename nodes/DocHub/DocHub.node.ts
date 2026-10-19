@@ -15,6 +15,7 @@ import {
 	assertValidSigners,
 	createdRoleId,
 	fieldAssignments,
+	matchRoleName,
 	fieldOptions,
 	parseDocumentId,
 	readSigners,
@@ -103,7 +104,7 @@ export class DocHub implements INodeType {
 						name: 'Send From Template',
 						value: 'sendFromTemplate',
 						action: 'Send a sign request from a template',
-						description: 'Copy a template, assign its fields to one role, and send it to a signer',
+						description: 'Copy a template and send it to one or more signers',
 					},
 				],
 				default: 'sendFromTemplate',
@@ -392,7 +393,11 @@ async function prepareTemplateRoles(
 	);
 
 	for (const [index, signer] of signers.entries()) {
-		if (roleIds.has(signer.roleName)) continue;
+		const existingName = matchRoleName(roleIds, signer.roleName);
+		if (existingName) {
+			signer.roleName = existingName;
+			continue;
+		}
 
 		const created = await dochubApiRequest.call(this, 'POST', '/document-roles', {
 			documentId: templateId,

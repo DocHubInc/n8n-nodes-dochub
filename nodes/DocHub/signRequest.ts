@@ -74,10 +74,11 @@ export function assertValidSigners(signers: SignerInput[]): void {
 		const label = `Signer ${index + 1}`;
 		if (!signer.roleName) throw new Error(`${label} needs a role name`);
 		if (!signer.email) throw new Error(`${label} needs an email`);
-		if (roleNames.has(signer.roleName)) {
+		const roleKey = signer.roleName.toLocaleLowerCase();
+		if (roleNames.has(roleKey)) {
 			throw new Error(`Role "${signer.roleName}" is used by more than one signer`);
 		}
-		roleNames.add(signer.roleName);
+		roleNames.add(roleKey);
 	});
 
 	const allFieldsSigners = signers.filter((signer) => signer.fields.includes(ALL_FIELDS));
@@ -94,6 +95,16 @@ export function roleIdsByName(payload: unknown): Map<string, string> {
 		if (name && id) roles.set(name, id);
 	}
 	return roles;
+}
+
+export function matchRoleName(roleIds: Map<string, string>, roleName: string): string | undefined {
+	if (roleIds.has(roleName)) return roleName;
+
+	const wanted = roleName.toLocaleLowerCase();
+	for (const name of roleIds.keys()) {
+		if (name.toLocaleLowerCase() === wanted) return name;
+	}
+	return undefined;
 }
 
 export function createdRoleId(payload: unknown): string {
