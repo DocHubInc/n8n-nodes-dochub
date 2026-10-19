@@ -3,6 +3,7 @@ import type {
 	IExecuteFunctions,
 	IHookFunctions,
 	IHttpRequestOptions,
+	ILoadOptionsFunctions,
 	INode,
 	JsonObject,
 } from 'n8n-workflow';
@@ -10,7 +11,7 @@ import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 import { DOCHUB_API_BASE_URL } from './dochub';
 
-type DocHubContext = IHookFunctions | IExecuteFunctions;
+type DocHubContext = IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions;
 
 export async function dochubApiRequest(
 	this: DocHubContext,

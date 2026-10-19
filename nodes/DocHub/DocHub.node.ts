@@ -1,18 +1,24 @@
 import type {
 	IDataObject,
 	IExecuteFunctions,
+	ILoadOptionsFunctions,
 	INodeExecutionData,
+	INodePropertyOptions,
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import { parsePdfUrl, safePdfFileName } from './dochub';
+import type { SignerInput } from './signRequest';
 import {
+	assertValidSigners,
 	createdRoleId,
-	fieldsToReassign,
-	findRoleId,
+	fieldAssignments,
+	fieldOptions,
 	parseDocumentId,
+	readSigners,
+	roleIdsByName,
 	signRequestBody,
 	unwrapResource,
 } from './signRequest';
@@ -21,7 +27,7 @@ import { downloadPdf, dochubApiRequest, rethrowDocHubError } from './transport';
 /**
  * Programmatic node: each operation is several dependent calls. Downloading a
  * document fetches a presigned URL, then the PDF bytes. Sending from a template
- * reads roles and fields, reassigns fields, then creates the sign request.
+ * creates missing roles, reassigns fields, then creates the sign request.
  */
 export class DocHub implements INodeType {
 	description: INodeTypeDescription = {
@@ -149,33 +155,67 @@ export class DocHub implements INodeType {
 				},
 			},
 			{
-				displayName: 'Signer Email',
-				name: 'signerEmail',
-				type: 'string',
+				displayName: 'Signers',
+				name: 'signers',
+				type: 'fixedCollection',
+				placeholder: 'Add Signer',
 				required: true,
-				default: '',
-				placeholder: 'name@email.com',
+				default: {},
+				typeOptions: {
+					multipleValues: true,
+					sortable: true,
+				},
+				description: 'Who signs, and which template fields each of them fills',
 				displayOptions: {
 					show: {
 						resource: ['signRequest'],
 						operation: ['sendFromTemplate'],
 					},
 				},
-			},
-			{
-				displayName: 'Role Name',
-				name: 'roleName',
-				type: 'string',
-				required: true,
-				default: 'Client',
-				description:
-					'Template role the signer fills. It is created on the template if it does not exist.',
-				displayOptions: {
-					show: {
-						resource: ['signRequest'],
-						operation: ['sendFromTemplate'],
+				options: [
+					{
+						displayName: 'Signer',
+						name: 'signer',
+						values: [
+							{
+								displayName: 'Role Name',
+								name: 'roleName',
+								type: 'string',
+								required: true,
+								default: '',
+								placeholder: 'Client',
+								description:
+									'Template role this signer fills. It is created on the template if it does not exist.',
+							},
+							{
+								displayName: 'Email',
+								name: 'email',
+								type: 'string',
+								required: true,
+								default: '',
+								placeholder: 'name@email.com',
+							},
+							{
+								displayName: 'Name',
+								name: 'name',
+								type: 'string',
+								default: '',
+							},
+							{
+								displayName: 'Field Names or IDs',
+								name: 'fields',
+								type: 'multiOptions',
+								typeOptions: {
+									loadOptionsMethod: 'getTemplateFields',
+									loadOptionsDependsOn: ['templateId'],
+								},
+								default: [],
+								description:
+									'Template fields assigned to this signer\'s role before sending. Leave empty to keep the template\'s assignments. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+							},
+						],
 					},
-				},
+				],
 			},
 			{
 				displayName: 'Email Subject',
@@ -205,10 +245,10 @@ export class DocHub implements INodeType {
 				},
 			},
 			{
-				displayName: 'Additional Fields',
-				name: 'additionalFields',
+				displayName: 'Options',
+				name: 'options',
 				type: 'collection',
-				placeholder: 'Add Field',
+				placeholder: 'Add Option',
 				default: {},
 				displayOptions: {
 					show: {
@@ -218,22 +258,22 @@ export class DocHub implements INodeType {
 				},
 				options: [
 					{
-						displayName: 'Assign All Fields to Role',
-						name: 'assignAllFields',
+						displayName: 'Sign in Order',
+						name: 'signInOrder',
 						type: 'boolean',
-						default: true,
+						default: false,
 						description:
-							'Whether to assign every template field to the role before sending. This changes the template.',
-					},
-					{
-						displayName: 'Signer Name',
-						name: 'signerName',
-						type: 'string',
-						default: '',
+							'Whether signers sign one after another, in the order listed. Otherwise everyone is invited at once.',
 					},
 				],
 			},
 		],
+	};
+
+	methods = {
+		loadOptions: {
+			getTemplateFields,
+		},
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -311,25 +351,19 @@ async function sendFromTemplate(
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
 	const templateId = parseDocumentId(this.getNodeParameter('templateId', itemIndex) as string);
-	const roleName = (this.getNodeParameter('roleName', itemIndex) as string).trim();
-	const signerEmail = (this.getNodeParameter('signerEmail', itemIndex) as string).trim();
-	const additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as {
-		assignAllFields?: boolean;
-		signerName?: string;
-	};
 	if (!templateId) {
 		throw new NodeOperationError(this.getNode(), 'Template is required', { itemIndex });
 	}
-	if (!roleName) {
-		throw new NodeOperationError(this.getNode(), 'Role Name is required', { itemIndex });
-	}
-	if (!signerEmail) {
-		throw new NodeOperationError(this.getNode(), 'Signer Email is required', { itemIndex });
-	}
 
-	if (additionalFields.assignAllFields !== false) {
-		await assignAllFieldsToRole.call(this, templateId, roleName);
+	const signers = readSigners(this.getNodeParameter('signers.signer', itemIndex, []));
+	try {
+		assertValidSigners(signers);
+	} catch (error) {
+		throw new NodeOperationError(this.getNode(), error as Error, { itemIndex });
 	}
+	const options = this.getNodeParameter('options', itemIndex, {}) as { signInOrder?: boolean };
+
+	await prepareTemplateRoles.call(this, templateId, signers);
 
 	const signRequest = await dochubApiRequest.call(
 		this,
@@ -337,9 +371,8 @@ async function sendFromTemplate(
 		'/sign-requests',
 		signRequestBody({
 			templateId,
-			roleName,
-			signerEmail,
-			signerName: additionalFields.signerName,
+			signers,
+			signInOrder: options.signInOrder === true,
 			subject: this.getNodeParameter('subject', itemIndex) as string,
 			message: this.getNodeParameter('message', itemIndex) as string,
 		}),
@@ -348,26 +381,48 @@ async function sendFromTemplate(
 	return { json: unwrapResource(signRequest) as IDataObject };
 }
 
-async function assignAllFieldsToRole(
+async function prepareTemplateRoles(
 	this: IExecuteFunctions,
 	templateId: string,
-	roleName: string,
+	signers: SignerInput[],
 ): Promise<void> {
-	const documentFilter = `filter%5BdocumentId%5D=${encodeURIComponent(templateId)}`;
-	const roles = await dochubApiRequest.call(this, 'GET', `/document-roles?${documentFilter}`);
-	const roleId =
-		findRoleId(roles, roleName) ??
-		createdRoleId(
-			await dochubApiRequest.call(this, 'POST', '/document-roles', {
-				documentId: templateId,
-				name: roleName,
-				queuePosition: 1,
-			}),
-		);
+	const filter = documentFilter(templateId);
+	const roleIds = roleIdsByName(
+		await dochubApiRequest.call(this, 'GET', `/document-roles?${filter}`),
+	);
 
-	const fields = await dochubApiRequest.call(this, 'GET', `/formfields?${documentFilter}`);
-	const assignments = fieldsToReassign(fields, roleId);
+	for (const [index, signer] of signers.entries()) {
+		if (roleIds.has(signer.roleName)) continue;
+
+		const created = await dochubApiRequest.call(this, 'POST', '/document-roles', {
+			documentId: templateId,
+			name: signer.roleName,
+			queuePosition: index + 1,
+		});
+		roleIds.set(signer.roleName, createdRoleId(created));
+	}
+
+	if (signers.every((signer) => signer.fields.length === 0)) return;
+
+	const fields = await dochubApiRequest.call(this, 'GET', `/formfields?${filter}`);
+	const assignments = fieldAssignments(fields, signers, roleIds);
 	if (assignments.length > 0) {
 		await dochubApiRequest.call(this, 'POST', '/formfields/bulk-update', { data: assignments });
 	}
+}
+
+async function getTemplateFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+	const template = this.getCurrentNodeParameter('templateId');
+	if (typeof template !== 'string' || template.trim() === '') return [];
+
+	const filter = documentFilter(parseDocumentId(template));
+	const [fields, roles] = await Promise.all([
+		dochubApiRequest.call(this, 'GET', `/formfields?${filter}`),
+		dochubApiRequest.call(this, 'GET', `/document-roles?${filter}`),
+	]);
+	return fieldOptions(fields, roles);
+}
+
+function documentFilter(documentId: string): string {
+	return `filter%5BdocumentId%5D=${encodeURIComponent(documentId)}`;
 }
