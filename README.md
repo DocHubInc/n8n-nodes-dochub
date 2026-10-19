@@ -1,6 +1,6 @@
 # n8n-nodes-dochub
 
-Use [DocHub](https://dochub.com) in [n8n](https://n8n.io/). **DocHub Trigger** starts a workflow when a DocHub event happens. **DocHub** downloads that document as a PDF.
+Use [DocHub](https://dochub.com) in [n8n](https://n8n.io/). **DocHub Trigger** starts a workflow when a DocHub event happens. **DocHub** downloads a document as a PDF and sends sign requests from templates.
 
 ## Install on n8n Cloud
 
@@ -21,6 +21,7 @@ The key needs:
 
 - webhook create, read, delete, and secret rotation, or the `all` permission
 - permission to download the document PDF
+- permission to edit the template and create sign requests, to send from a template
 
 Creating webhooks requires a paid DocHub plan.
 
@@ -43,6 +44,19 @@ Add **DocHub** after the trigger. Set the operation to **Download** and **Docume
 ```
 
 **File Name** is optional. Leave it empty to use the name DocHub sends, or set an expression such as `{{ $json.data.document.title }}`. The PDF is the binary item `data`.
+
+## Send a sign request from a template
+
+Add **DocHub**, set the resource to **Sign Request** and the operation to **Send From Template**.
+
+- **Template**: the template URL or ID, for example `https://dochub.com/your-name/mqNjP3BVW0doMPGw9yGzLk/contract`.
+- **Signer Email**: who signs. Use an expression such as `{{ $json.email }}` to send one request per input item.
+- **Role Name**: the template role the signer fills. Defaults to `Client`. It is created on the template if missing.
+- **Email Subject** and **Email Message**: the invitation email.
+
+By default the node assigns every template field to that role before sending. Turn off **Assign All Fields to Role** under **Additional Fields** to keep the template's own assignments. **Signer Name** is optional.
+
+DocHub sends a copy of the template. The output is the new sign request, including `documentUrl`. Every run sends a new copy and a new email.
 
 ## Resources
 
