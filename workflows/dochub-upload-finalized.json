@@ -1,0 +1,244 @@
+{
+  "name": "DocHub demo: upload finalized PDF",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Upload the signed PDF\n\nTurn this workflow **Active**. It listens for `document.status_changed` and, when the new status is `FINALIZED`, downloads that document and uploads the PDF to **your Drive folder**.\n\nThe Drive file name is the template title, a plus sign, and the **name** column from the sheet. For example, `Contract+Alex`. The row is the one whose **sent** URL contains the finalized document id.\n\nUse **DocHub account** on the trigger and the download node, **Google Sheets** on **Read signers**, and **Google Drive account** on **Upload file**.",
+        "height": 280,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-520, -360],
+      "id": "a7d4e1c0-91ab-4c55-8e20-6b3f0a9d4001",
+      "name": "How to run this demo"
+    },
+    {
+      "parameters": {
+        "events": ["document.status_changed"]
+      },
+      "type": "n8n-nodes-dochub.docHubTrigger",
+      "typeVersion": 1,
+      "position": [-496, -128],
+      "id": "a7d4e1c0-91ab-4c55-8e20-6b3f0a9d4002",
+      "name": "DocHub Trigger",
+      "credentials": {
+        "docHubApi": {
+          "id": "n6ZeUcxTeXWOWHWO",
+          "name": "DocHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "status-finalized",
+              "leftValue": "={{ $json.data.new_status }}",
+              "rightValue": "FINALIZED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "has-document-id",
+              "leftValue": "={{ $json.data.document.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [-272, -128],
+      "id": "a7d4e1c0-91ab-4c55-8e20-6b3f0a9d4003",
+      "name": "Status is finalized"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "0",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-48, -128],
+      "id": "a7d4e1c0-91ab-4c55-8e20-6b3f0a9d4006",
+      "name": "Read signers"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "sent-matches-document",
+              "leftValue": "={{ ($json.sent ?? '').toString() }}",
+              "rightValue": "={{ $('DocHub Trigger').first().json.data.document.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [176, -128],
+      "id": "a7d4e1c0-91ab-4c55-8e20-6b3f0a9d4007",
+      "name": "Matching signer"
+    },
+    {
+      "parameters": {
+        "documentId": "={{ $('DocHub Trigger').first().json.data.document.id }}",
+        "fileName": "={{ $('DocHub Trigger').first().json.data.document.title + '+' + $json.name }}"
+      },
+      "type": "n8n-nodes-dochub.docHub",
+      "typeVersion": 1,
+      "position": [400, -128],
+      "id": "a7d4e1c0-91ab-4c55-8e20-6b3f0a9d4004",
+      "name": "Download a document",
+      "credentials": {
+        "docHubApi": {
+          "id": "n6ZeUcxTeXWOWHWO",
+          "name": "DocHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_DRIVE_FOLDER_ID",
+          "mode": "id",
+          "cachedResultName": "Your Drive folder",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/YOUR_DRIVE_FOLDER_ID"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [624, -128],
+      "id": "a7d4e1c0-91ab-4c55-8e20-6b3f0a9d4005",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "liyE9Khdm9Wlbk4t",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "DocHub Trigger": {
+      "main": [
+        [
+          {
+            "node": "Status is finalized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status is finalized": {
+      "main": [
+        [
+          {
+            "node": "Read signers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read signers": {
+      "main": [
+        [
+          {
+            "node": "Matching signer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matching signer": {
+      "main": [
+        [
+          {
+            "node": "Download a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download a document": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

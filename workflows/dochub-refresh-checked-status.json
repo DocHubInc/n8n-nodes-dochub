@@ -1,0 +1,318 @@
+{
+  "name": "DocHub demo: refresh checked status",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Refresh rows marked check\n\nClick **Execute workflow**. Rows whose **status** is `check` or empty are looked up in DocHub. **status** becomes the sign request's current status (`IN_PROGRESS`, `FINALIZED`, `REJECTED`, and so on), and **timestamp** becomes this execution's time.\n\nRows with an empty **sent** cell are skipped. The document id is taken from the **sent** URL. A row DocHub does not return, or a request that fails, is left unchanged so the next click retries it.\n\nOn **Get current status**, choose the same **DocHub API** credential as the other workflows. On both Google Sheets nodes, choose an account that can edit [the spreadsheet](https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit).",
+        "height": 320,
+        "width": 640,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, -400],
+      "id": "e6c3a9d2-8f46-4b3c-9e53-2a7d0c9f3001",
+      "name": "How to run this demo"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "e6c3a9d2-8f46-4b3c-9e53-2a7d0c9f3002",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "0",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [280, 0],
+      "id": "e6c3a9d2-8f46-4b3c-9e53-2a7d0c9f3003",
+      "name": "Read signers"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "status-is-check-or-empty",
+              "leftValue": "={{ ($json.status ?? '').toString().trim().toLowerCase() }}",
+              "rightValue": "^$|^check$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "id": "sent-not-empty",
+              "leftValue": "={{ ($json.sent ?? '').toString().trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "sent-has-document-id",
+              "leftValue": "={{ ($json.sent ?? '').toString().trim() }}",
+              "rightValue": "[A-Za-z0-9]{22}",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [560, 0],
+      "id": "e6c3a9d2-8f46-4b3c-9e53-2a7d0c9f3004",
+      "name": "Status is check"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://dochub.com/api/v2/sign-requests?filter%5BdocumentId%5D={{ encodeURIComponent(($json.sent.match(/[A-Za-z0-9]{22}/) || [''])[0]) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "docHubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 0],
+      "id": "e6c3a9d2-8f46-4b3c-9e53-2a7d0c9f3005",
+      "name": "Get current status",
+      "notes": "Uses the DocHub API credential. Lists the sign request for the document id in the sent URL.",
+      "notesInFlow": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-status",
+              "leftValue": "={{ $json.data && $json.data[0] && $json.data[0].status }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [1120, 0],
+      "id": "e6c3a9d2-8f46-4b3c-9e53-2a7d0c9f3006",
+      "name": "Got current status"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "0",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Status is check').item.json.row_number }}",
+            "status": "={{ $json.data[0].status }}",
+            "timestamp": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": ["row_number"],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent",
+              "displayName": "sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1400, 0],
+      "id": "e6c3a9d2-8f46-4b3c-9e53-2a7d0c9f3007",
+      "name": "Write status and time"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Read signers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read signers": {
+      "main": [
+        [
+          {
+            "node": "Status is check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status is check": {
+      "main": [
+        [
+          {
+            "node": "Get current status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get current status": {
+      "main": [
+        [
+          {
+            "node": "Got current status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Got current status": {
+      "main": [
+        [
+          {
+            "node": "Write status and time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

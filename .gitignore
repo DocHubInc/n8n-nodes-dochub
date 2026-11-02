@@ -3,3 +3,4 @@ node_modules
 *.tsbuildinfo
 .idea
 /tmp
+.DS_Store

@@ -1,0 +1,274 @@
+{
+  "name": "DocHub demo: update status from webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Update status when signing finishes\n\nTurn this workflow **Active**. n8n registers a DocHub webhook for `document.status_changed`. When a sign request reaches a terminal status (`FINALIZED`, `REJECTED`, `VOIDED`, or `EXPIRED`), this finds the row whose **sent** URL contains that document id, writes the new status into **status**, and writes this execution's time into **timestamp**.\n\nBefore activating on n8n Cloud:\n1. The **DocHub** community node is installed.\n2. **DocHub Trigger** uses the **DocHub API** credential. The key needs permission to create webhooks.\n3. Both Google Sheets nodes use an account that can edit [the spreadsheet](https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit).\n\nDocHub does not send this event for in-progress updates. Turning the workflow off deletes the webhook. n8n Cloud already has a public HTTPS URL, so no tunnel is required.",
+        "height": 340,
+        "width": 640,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, -420],
+      "id": "d5b2f8c1-7e35-4a2b-8d42-1f6c9b8e2001",
+      "name": "How to run this demo"
+    },
+    {
+      "parameters": {
+        "events": ["document.status_changed"]
+      },
+      "type": "n8n-nodes-dochub.docHubTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "id": "d5b2f8c1-7e35-4a2b-8d42-1f6c9b8e2002",
+      "name": "DocHub Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-document-id",
+              "leftValue": "={{ $json.data?.document?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "has-new-status",
+              "leftValue": "={{ $json.data?.new_status }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [280, 0],
+      "id": "d5b2f8c1-7e35-4a2b-8d42-1f6c9b8e2003",
+      "name": "Has document status"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "0",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [560, 0],
+      "id": "d5b2f8c1-7e35-4a2b-8d42-1f6c9b8e2004",
+      "name": "Read signers"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "sent-contains-document",
+              "leftValue": "={{ $json.sent }}",
+              "rightValue": "={{ $('DocHub Trigger').first().json.data.document.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [840, 0],
+      "id": "d5b2f8c1-7e35-4a2b-8d42-1f6c9b8e2005",
+      "name": "Matching sent URL"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "0",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "status": "={{ $('DocHub Trigger').first().json.data.new_status }}",
+            "timestamp": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": ["row_number"],
+          "schema": [
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent",
+              "displayName": "sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1120, 0],
+      "id": "d5b2f8c1-7e35-4a2b-8d42-1f6c9b8e2006",
+      "name": "Update status"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "DocHub Trigger": {
+      "main": [
+        [
+          {
+            "node": "Has document status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has document status": {
+      "main": [
+        [
+          {
+            "node": "Read signers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read signers": {
+      "main": [
+        [
+          {
+            "node": "Matching sent URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matching sent URL": {
+      "main": [
+        [
+          {
+            "node": "Update status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
