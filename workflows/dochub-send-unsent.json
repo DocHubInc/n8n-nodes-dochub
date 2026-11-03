@@ -3,14 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Send sign requests from the sheet\n\nClick **Execute workflow**. Every row with an email and an empty **sent** cell gets one sign request from the template. **sent** is then set to that copy's URL, so the next click skips it.\n\nBefore the first run on n8n Cloud:\n1. Install the **DocHub** community node (`n8n-nodes-dochub`) in this workspace.\n2. On both Google Sheets nodes, choose a Google account that can edit [the spreadsheet](https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit).\n3. On **Send sign request**, choose the **DocHub API** credential. The key must be allowed to edit the template and create sign requests.\n4. Set **Role Name** to the role that already owns the fields on the template. Leave **Fields** empty. A role name the template does not have is created on the template.\n\n**status** is filled by the webhook workflow when DocHub reports a terminal status. A failed send leaves **sent** empty, so the next click retries that row.",
-        "height": 360,
+        "content": "## Send sign requests from the sheet\n\nClick **Execute workflow**, or call **Webhook** while this workflow is active. Every row with an email and an empty **sent** cell gets one sign request from the template. **sent** is then set to that copy's URL, so the next run skips it.\n\nBefore the first run on n8n Cloud:\n1. Install the **DocHub** community node (`n8n-nodes-dochub`) in this workspace.\n2. On both Google Sheets nodes, choose a Google account that can edit [the spreadsheet](https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit).\n3. On **Send sign request**, choose the **DocHub API** credential. The key must be allowed to edit the template and create sign requests.\n4. Set **Role Name** to the role that already owns the fields on the template. Leave **Fields** empty. A role name the template does not have is created on the template.\n5. Turn the workflow **Active** so the webhook is listening. Its path is `dochub-send-unsent`.\n\n**signed** is not updated here. A failed send leaves **sent** empty, so the next run retries that row.",
+        "height": 400,
         "width": 620,
         "color": 4
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-40, -440],
+      "position": [-656, -112],
       "id": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1001",
       "name": "How to run this demo"
     },
@@ -18,7 +18,7 @@
       "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [0, 0],
+      "position": [-624, 336],
       "id": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1002",
       "name": "When clicking 'Execute workflow'"
     },
@@ -41,7 +41,7 @@
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [280, 0],
+      "position": [-336, 336],
       "id": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1003",
       "name": "Read signers"
     },
@@ -51,7 +51,7 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose",
+            "typeValidation": "strict",
             "version": 2
           },
           "conditions": [
@@ -82,7 +82,7 @@
       },
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
-      "position": [560, 0],
+      "position": [-64, 336],
       "id": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1004",
       "name": "Not sent yet"
     },
@@ -102,11 +102,12 @@
           ]
         },
         "subject": "Please sign this document",
-        "message": "=Hi {{ $json.name }},\n\nPlease review and sign this document."
+        "message": "=Hi {{ $json.name }},\n\nPlease review and sign this document.",
+        "options": {}
       },
       "type": "n8n-nodes-dochub.docHub",
       "typeVersion": 1,
-      "position": [840, 0],
+      "position": [224, 336],
       "id": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1005",
       "name": "Send sign request",
       "notes": "Role Name must already exist on the template. Fields is empty on purpose, so the template keeps its current field assignments.",
@@ -119,7 +120,7 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose",
+            "typeValidation": "strict",
             "version": 2
           },
           "conditions": [
@@ -140,7 +141,7 @@
       },
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
-      "position": [1120, 0],
+      "position": [512, 336],
       "id": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1006",
       "name": "Send succeeded"
     },
@@ -209,8 +210,8 @@
               "removed": false
             },
             {
-              "id": "status",
-              "displayName": "status",
+              "id": "signed",
+              "displayName": "signed",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -226,9 +227,21 @@
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [1400, 0],
+      "position": [784, 336],
       "id": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1007",
       "name": "Mark sent"
+    },
+    {
+      "parameters": {
+        "path": "dochub-send-unsent",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [-640, 576],
+      "id": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1008",
+      "name": "Webhook",
+      "webhookId": "c4a1e7b0-6d24-4f1a-9c31-0e5b8a7d1008"
     }
   ],
   "pinData": {},
@@ -282,6 +295,17 @@
         [
           {
             "node": "Mark sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read signers",
             "type": "main",
             "index": 0
           }
